@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Anakin</title>
+<script type="text/javascript" src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 12px;
+    font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    color: #2f3941;
+    background: #fff;
+  }
+  h1 { font-size: 14px; margin: 0 0 10px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid #e3e6e8; }
+  .tab-btn {
+    flex: 1;
+    padding: 6px 4px;
+    font-size: 11px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #68737d;
+    cursor: pointer;
+  }
+  .tab-btn.active { color: #1f73b7; border-bottom-color: #1f73b7; font-weight: 600; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  label { display: block; margin: 8px 0 3px; font-weight: 600; color: #444; }
+  input[type="text"], input[type="number"], textarea, select {
+    width: 100%;
+    padding: 5px 6px;
+    border: 1px solid #c2c8cc;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 50px; }
+  .checkbox-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
+  .checkbox-row label { margin: 0; font-weight: normal; }
+  .actions { margin-top: 12px; display: flex; gap: 6px; }
+  button.primary {
+    background: #1f73b7;
+    color: #fff;
+    border: none;
+    padding: 7px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  button.primary:disabled { background: #a8c4dc; cursor: default; }
+  button.secondary {
+    background: #fff;
+    color: #1f73b7;
+    border: 1px solid #1f73b7;
+    padding: 6px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  button.secondary:disabled { color: #a8c4dc; border-color: #a8c4dc; cursor: default; }
+  #status { margin-top: 10px; font-size: 12px; color: #68737d; min-height: 16px; }
+  #status.error { color: #d93f4c; }
+  #result-panel {
+    margin-top: 10px;
+    border: 1px solid #e3e6e8;
+    border-radius: 4px;
+    padding: 8px;
+    display: none;
+  }
+  #result-panel.visible { display: block; }
+  #result-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 260px;
+    overflow-y: auto;
+    font-size: 12px;
+    margin: 0 0 8px;
+  }
+  #insert-row { display: flex; gap: 6px; }
+  .hint { font-size: 11px; color: #8b959e; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Anakin</h1>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="scrape">Scrape URL</button>
+  <button class="tab-btn" data-tab="search">AI Search</button>
+  <button class="tab-btn" data-tab="agentic">Agentic Search</button>
+</div>
+
+<div id="panel-scrape" class="panel active">
+  <label for="scrape-url">URL</label>
+  <input type="text" id="scrape-url" placeholder="https://example.com/pricing">
+
+  <label for="scrape-country">Country</label>
+  <select id="scrape-country">
+    <option value="us" selected>US</option>
+    <option value="gb">GB</option>
+    <option value="de">DE</option>
+    <option value="in">IN</option>
+    <option value="jp">JP</option>
+  </select>
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="scrape-use-browser">
+    <label for="scrape-use-browser">Use browser rendering (JS-heavy pages)</label>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" id="scrape-generate-json">
+    <label for="scrape-generate-json">Generate structured JSON</label>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" id="scrape-force-fresh">
+    <label for="scrape-force-fresh">Force fresh (skip cache)</label>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="scrape-submit">Scrape</button>
+  </div>
+</div>
+
+<div id="panel-search" class="panel">
+  <label for="search-prompt">Search prompt</label>
+  <textarea id="search-prompt" placeholder="e.g. latest pricing for Acme Corp's API plan"></textarea>
+
+  <label for="search-limit">Result limit</label>
+  <input type="number" id="search-limit" value="5" min="1" max="20">
+
+  <div class="actions">
+    <button class="primary" id="search-submit">Search</button>
+  </div>
+  <p class="hint">Synchronous — costs 3 credits per call.</p>
+</div>
+
+<div id="panel-agentic" class="panel">
+  <label for="agentic-prompt">Research prompt</label>
+  <textarea id="agentic-prompt" placeholder="e.g. summarize Acme Corp's refund policy and cite the source page"></textarea>
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="agentic-use-browser" checked>
+    <label for="agentic-use-browser">Use browser rendering</label>
+  </div>
+
+  <label for="agentic-schema">Structured data schema (optional, JSON Schema)</label>
+  <textarea id="agentic-schema" placeholder='{"type": "object", "properties": {"policy_summary": {"type": "string"}}}'></textarea>
+
+  <div class="actions">
+    <button class="primary" id="agentic-submit">Run agentic search</button>
+  </div>
+  <p class="hint">Multi-stage AI research — costs 10 credits.</p>
+</div>
+
+<div id="status"></div>
+
+<div id="result-panel">
+  <pre id="result-text"></pre>
+  <div id="insert-row">
+    <button class="secondary" id="insert-note" disabled>Insert as internal note</button>
+    <button class="secondary" id="insert-reply" disabled>Insert as public reply</button>
+  </div>
+</div>
+
+<script type="text/javascript">
+(function () {
+  "use strict";
+
+  var client = ZAFClient.init();
+  var API_BASE = "https://api.anakin.io/v1";
+  var POLL_INTERVAL_MS = 2000;
+  var POLL_TIMEOUT_MS = 90000;
+
+  var lastResultText = "";
+
+  // ─── tabs ─────────────────────────────────────────────────────────────────
+
+  var tabButtons = document.querySelectorAll(".tab-btn");
+  for (var i = 0; i < tabButtons.length; i++) {
+    tabButtons[i].addEventListener("click", function (evt) {
+      var target = evt.currentTarget.getAttribute("data-tab");
+      var buttons = document.querySelectorAll(".tab-btn");
+      var panels = document.querySelectorAll(".panel");
+      for (var j = 0; j < buttons.length; j++) {
+        buttons[j].classList.toggle("active", buttons[j] === evt.currentTarget);
+      }
+      for (var k = 0; k < panels.length; k++) {
+        panels[k].classList.toggle("active", panels[k].id === "panel-" + target);
+      }
+      clearResult();
+    });
+  }
+
+  // ─── status / result helpers ────────────────────────────────────────────
+
+  function setStatus(message, isError) {
+    var el = document.getElementById("status");
+    el.textContent = message || "";
+    el.classList.toggle("error", !!isError);
+  }
+
+  function clearResult() {
+    lastResultText = "";
+    document.getElementById("result-panel").classList.remove("visible");
+    document.getElementById("result-text").textContent = "";
+    document.getElementById("insert-note").disabled = true;
+    document.getElementById("insert-reply").disabled = true;
+    setStatus("");
+  }
+
+  function showResult(text) {
+    lastResultText = text;
+    document.getElementById("result-text").textContent = text;
+    document.getElementById("result-panel").classList.add("visible");
+    document.getElementById("insert-note").disabled = false;
+    document.getElementById("insert-reply").disabled = false;
+  }
+
+  function setButtonsDisabled(disabled) {
+    document.getElementById("scrape-submit").disabled = disabled;
+    document.getElementById("search-submit").disabled = disabled;
+    document.getElementById("agentic-submit").disabled = disabled;
+  }
+
+  // ─── Anakin API calls ────────────────────────────────────────────────────
+  //
+  // Requests go through client.request() rather than a direct browser
+  // fetch()/XHR. Two reasons, both from Zendesk's own docs:
+  //   1. client.request() is proxied through Zendesk's own infrastructure,
+  //      which is what lets it reach a third-party API without that API
+  //      needing to grant CORS to a Zendesk subdomain (the app's own origin
+  //      is a Zendesk-controlled sandboxed iframe origin, not something
+  //      api.anakin.io could allowlist ahead of time even if it wanted to).
+  //   2. `secure: true` plus the `{{setting.apiKey}}` placeholder in the
+  //      headers object means the real API key value is substituted in by
+  //      Zendesk's proxy server, outside the browser. The iframe's own JS —
+  //      this code — never sees the plaintext key, and it never appears in
+  //      browser dev tools/network tab.
+  //
+  // api.anakin.io's own CORS posture for direct browser calls was not
+  // checked and does not matter for this design: client.request() sidesteps
+  // the question entirely by not being a same-origin/CORS-governed request
+  // in the first place.
+
+  function anakinRequest(path, method, body) {
+    var options = {
+      url: API_BASE + path,
+      type: method,
+      secure: true,
+      headers: {
+        "X-API-Key": "{{setting.apiKey}}"
+      }
+    };
+    if (body !== undefined) {
+      options.contentType = "application/json";
+      options.data = JSON.stringify(body);
+    }
+    return client.request(options);
+  }
+
+  function pollJob(path) {
+    var deadline = Date.now() + POLL_TIMEOUT_MS;
+
+    function poll() {
+      return anakinRequest(path, "GET").then(function (response) {
+        var body = parseResponse(response);
+        if (body.status === "completed") {
+          return body;
+        }
+        if (body.status === "failed") {
+          var err = new Error(body.error || "Anakin job failed");
+          err.anakinBody = body;
+          throw err;
+        }
+        if (Date.now() > deadline) {
+          throw new Error(
+            "Timed out waiting for the job to finish (over " +
+              Math.round(POLL_TIMEOUT_MS / 1000) +
+              "s). Anakin may still be processing it — try again shortly."
+          );
+        }
+        return new Promise(function (resolve) {
+          setTimeout(resolve, POLL_INTERVAL_MS);
+        }).then(poll);
+      });
+    }
+
+    return poll();
+  }
+
+  function parseResponse(response) {
+    // client.request() with contentType application/json (implicit accepts)
+    // returns a parsed object in most ZAF SDK versions, but has been known
+    // to return a JSON string depending on configuration — tolerate both.
+    if (typeof response === "string") {
+      return JSON.parse(response);
+    }
+    return response;
+  }
+
+  function requireJobId(submitted) {
+    var jobId = submitted.jobId || submitted.job_id || submitted.id;
+    if (!jobId) {
+      throw new Error("Anakin API response did not include a job id.");
+    }
+    return jobId;
+  }
+
+  function describeError(err) {
+    if (err && err.responseJSON && err.responseJSON.message) {
+      return err.responseJSON.message;
+    }
+    if (err && err.responseText) {
+      try {
+        var parsed = JSON.parse(err.responseText);
+        if (parsed && parsed.message) {
+          return parsed.message;
+        }
+      } catch (e) {
+        // fall through to generic handling below
+      }
+    }
+    if (err && err.message) {
+      return err.message;
+    }
+    return "Request failed. Check the API key and try again.";
+  }
+
+  // ─── Scrape URL ──────────────────────────────────────────────────────────
+
+  document.getElementById("scrape-submit").addEventListener("click", function () {
+    var url = document.getElementById("scrape-url").value.trim();
+    if (!url) {
+      setStatus("Enter a URL to scrape.", true);
+      return;
+    }
+
+    var body = {
+      url: url,
+      country: document.getElementById("scrape-country").value || "us",
+      useBrowser: document.getElementById("scrape-use-browser").checked,
+      generateJson: document.getElementById("scrape-generate-json").checked,
+      forceFresh: document.getElementById("scrape-force-fresh").checked
+    };
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Submitting scrape job...");
+
+    anakinRequest("/url-scraper", "POST", body)
+      .then(function (response) {
+        var submitted = parseResponse(response);
+        var jobId = requireJobId(submitted);
+        setStatus("Scraping " + url + " ...");
+        return pollJob("/url-scraper/" + jobId);
+      })
+      .then(function (doc) {
+        var text = doc.markdown || doc.summary || doc.cleanedHtml || doc.html || "(no content returned)";
+        setStatus("Done" + (doc.cached ? " (cached)" : "") + ".");
+        showResult(text);
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // ─── AI Search (synchronous) ─────────────────────────────────────────────
+
+  document.getElementById("search-submit").addEventListener("click", function () {
+    var prompt = document.getElementById("search-prompt").value.trim();
+    if (!prompt) {
+      setStatus("Enter a search prompt.", true);
+      return;
+    }
+    var limit = parseInt(document.getElementById("search-limit").value, 10) || 5;
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Searching...");
+
+    anakinRequest("/search", "POST", { prompt: prompt, limit: limit })
+      .then(function (response) {
+        var result = parseResponse(response);
+        var items = result.results || [];
+        if (items.length === 0) {
+          setStatus("No results.");
+          showResult("No results for: " + prompt);
+          return;
+        }
+        var lines = items.map(function (item, idx) {
+          var parts = [(idx + 1) + ". " + (item.title || item.url)];
+          parts.push(item.url);
+          if (item.snippet) {
+            parts.push(item.snippet);
+          }
+          return parts.join("\n");
+        });
+        setStatus("Found " + items.length + " result(s).");
+        showResult(lines.join("\n\n"));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // ─── Agentic Search ──────────────────────────────────────────────────────
+
+  document.getElementById("agentic-submit").addEventListener("click", function () {
+    var prompt = document.getElementById("agentic-prompt").value.trim();
+    if (!prompt) {
+      setStatus("Enter a research prompt.", true);
+      return;
+    }
+
+    var body = {
+      prompt: prompt,
+      useBrowser: document.getElementById("agentic-use-browser").checked
+    };
+
+    var schemaText = document.getElementById("agentic-schema").value.trim();
+    if (schemaText) {
+      try {
+        body.schema = JSON.parse(schemaText);
+      } catch (e) {
+        setStatus("Schema is not valid JSON: " + e.message, true);
+        return;
+      }
+    }
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Submitting agentic search job...");
+
+    anakinRequest("/agentic-search", "POST", body)
+      .then(function (response) {
+        var submitted = parseResponse(response);
+        var jobId = requireJobId(submitted);
+        setStatus("Researching...");
+        return pollJob("/agentic-search/" + jobId);
+      })
+      .then(function (result) {
+        var generated = result.generatedJson || {};
+        var text = generated.summary || "(no summary returned)";
+        if (generated.structuredData) {
+          text += "\n\n---\n" + JSON.stringify(generated.structuredData, null, 2);
+        }
+        setStatus("Done" + (result.cached ? " (cached)" : "") + ".");
+        showResult(text);
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // ─── Insert into ticket comment ──────────────────────────────────────────
+  //
+  // client.set('comment.type', ...) / client.set('comment.text', ...) and
+  // client.invoke('comment.appendText', ...) are the documented ticket
+  // sidebar comment-editor paths (Zendesk Apps Support API reference,
+  // "Ticket and New Ticket sidebar"). appendText is used instead of
+  // set('comment.text', ...) so an agent's own in-progress draft isn't
+  // clobbered — the Anakin output is appended to whatever's already there.
+
+  function insertResult(commentType) {
+    if (!lastResultText) {
+      return;
+    }
+    client
+      .set("comment.type", commentType)
+      .then(function () {
+        return client.invoke("comment.appendText", "\n\n" + lastResultText + "\n");
+      })
+      .then(function () {
+        setStatus("Inserted into the " + (commentType === "internalNote" ? "internal note" : "reply") + ".");
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      });
+  }
+
+  document.getElementById("insert-note").addEventListener("click", function () {
+    insertResult("internalNote");
+  });
+
+  document.getElementById("insert-reply").addEventListener("click", function () {
+    insertResult("publicReply");
+  });
+})();
+</script>
+
+</body>
+</html>

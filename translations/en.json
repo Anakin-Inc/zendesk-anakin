@@ -1,0 +1,14 @@
+{
+  "app": {
+    "name": "Anakin",
+    "short_description": "Scrape URLs and run AI web search from the ticket sidebar, insert results as a note or reply.",
+    "long_description": "Anakin adds web scraping, AI-powered search, and multi-stage agentic research to the ticket sidebar. Pull a page mentioned in a ticket, run a search on the customer's topic, or kick off a deeper agentic research job, then insert the result straight into the ticket as an internal note or public reply — without leaving Zendesk.",
+    "installation_instructions": "Create a free API key at anakin.io/dashboard (300 credits, no card required), then paste it into the \"Anakin API Key\" field below. The key is stored as a secure setting: it never reaches this app's JavaScript in the browser, only Zendesk's own request proxy uses it when calling api.anakin.io on the app's behalf.",
+    "parameters": {
+      "apiKey": {
+        "label": "Anakin API Key",
+        "help": "From anakin.io/dashboard. Sent as the X-API-Key header via Zendesk's secure request proxy — never exposed to this app's client-side JavaScript."
+      }
+    }
+  }
+}

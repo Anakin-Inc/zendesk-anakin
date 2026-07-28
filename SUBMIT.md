@@ -11,12 +11,35 @@ process, unlike the Dagster submission in this batch).
 ```
 manifest.json          App metadata, ticket_sidebar location, the secure
                         apiKey parameter, domainWhitelist: ["api.anakin.io"]
-assets/iframe.html      The whole app — form UI + JS, ~400 lines, no build step
+assets/iframe.html      The whole app — form UI + JS across ten tabs
+                        (~1300 lines), no build step
 translations/en.json    name / short_description / long_description /
                         installation_instructions / parameter label+help —
                         the fields Zendesk's own deploying doc says a
                         listing requires
 ```
+
+## Coverage: 13 of 21 Anakin API capabilities
+
+The initial submission covered 3 capabilities (scrape, search,
+agentic_search). This revision adds 10 more read-oriented ones, one tab
+each (Wire Find covers two closely-related read endpoints in a single tab):
+`map`, `crawl`, `wire_discover`, `wire_catalog`, `wire_read_action`,
+`ai_visibility_search`, `ai_visibility_sources`, `monitor_list`,
+`monitor_changes`, `session_list` — 13 total.
+
+The remaining 8 (`wire_write_action`, `wire_identities`, `wire_login`,
+`wire_build`, `monitor_create`, `monitor_control`, `session_delete`,
+`browser_task`) were deliberately excluded: every one of them either changes
+state on a third-party site or in Anakin's own account (form submits,
+publishing a new Wire action, creating/deleting/pausing a monitor, deleting a
+saved login session), manages credentials for a sign-in flow this app
+doesn't implement, or is open-ended browser automation that can run for
+minutes — none of that belongs behind a single click in a ticket sidebar with
+no separate confirmation step. Full reasoning is in README.md's "Scope"
+section, cross-referenced against each tool's own `readOnlyHint` /
+`destructiveHint` annotation in `anakin-mcp/src/tools/*.ts` rather than
+judgment calls made from scratch.
 
 Structure and every API surface used (`location.support.ticket_sidebar`
 with `url`/`flexible`, `parameters` with `secure: true`, `domainWhitelist`,
@@ -63,12 +86,24 @@ never a raw `fetch()`.
 
 ## Verified, not assumed
 
+- **Every new endpoint/field was read from `anakin-mcp`'s own source, not
+  guessed** — `anakin-mcp/src/client.ts` (the `AnakinClient` methods, request
+  bodies, and response interfaces) and the matching `anakin-mcp/src/tools/
+  {wire,ai-visibility,monitor,sessions,map,crawl}.ts` files were read in full
+  before writing any of the ten tabs' request bodies, query strings, and
+  poll paths (e.g. Wire's `POST /wire/task` → `GET /wire/jobs/:jobId`, AI
+  Visibility's `POST /ai-visibility/search` → `GET
+  /ai-visibility/search/:search_id` polling on `status !== "running"` rather
+  than a completed/failed check, monitor/session/wire-catalog response
+  shapes left as pretty-printed JSON rather than inventing field names for
+  the `unknown`/`Record<string, unknown>` return types).
 - **`manifest.json` parses as valid JSON** — `python3 -c "import json;
   json.load(open('manifest.json'))"`, exit 0.
 - **`translations/en.json` parses as valid JSON** — same check, exit 0.
 - **`assets/iframe.html`'s embedded `<script>` is syntactically valid
-  JavaScript** — extracted the script block and ran `node --check` on it
-  directly, exit 0 (Node v25.2.1 in this sandbox).
+  JavaScript** — extracted the script block (now ~28KB covering all ten
+  tabs) and ran `node --check` on it directly, exit 0 (Node v25.2.1 in this
+  sandbox).
 - **`manifest.json`'s shape was checked against a real, live Zendesk sample
   app** — `zendesk/demo_apps`'s `v2/support/modal_sample_app/manifest.json`,
   fetched via GitHub's raw content API, matches this submission's
@@ -90,25 +125,27 @@ never a raw `fetch()`.
   an `invoke`-only action distinct from the gettable/settable `comment.text`.
 - **`npx @zendesk/zcli --version` installs and runs for real** —
   `@zendesk/zcli/1.1.4 darwin-arm64 node-v25.2.1`, a genuine `npx` install
-  and execution in this sandbox, not assumed to exist.
+  and execution in this sandbox, not assumed to exist. Re-confirmed on this
+  revision, same version.
 - **`npx @zendesk/zcli apps:validate .` and `apps:package .` were both
-  actually run against this directory** — both reach real, documented zcli
-  commands (confirmed their `--help` output matches the command reference)
-  and both ultimately fail with `Authorization failed. Set the following
-  environment variables: ZENDESK_SUBDOMAIN, ZENDESK_EMAIL,
-  ZENDESK_API_TOKEN. Or try logging in via zcli login -i` — a real
-  credential requirement, not a bug in this submission. But before hitting
-  that wall, the commands got further than "just an error": both runs left
-  a real `tmp/app-<timestamp>.zip` behind (`tmp/` is now in `.gitignore`,
-  the zips were deleted after inspection), and unzipping one showed zcli
-  had already locally assembled the exact right structure —
-  `manifest.json`, `assets/iframe.html`, `translations/en.json`, correct
-  paths, nothing missing or extra — before making the network call that
-  needs an authenticated account. That's real signal that the local file
-  layout is correct at the level zcli itself checks; only the remote
-  validate/upload call is blocked on credentials. There is no fully
-  offline `zcli` command that both packages *and* reports validation
-  errors without an account.
+  re-run against the extended app (ten tabs, `manifest.json` version bumped
+  to 1.1.0)** — both reach real, documented zcli commands (confirmed their
+  `--help` output matches the command reference) and both still fail with
+  `Authorization failed. Set the following environment variables:
+  ZENDESK_SUBDOMAIN, ZENDESK_EMAIL, ZENDESK_API_TOKEN. Or try logging in via
+  zcli login -i` — the same real credential requirement as the original
+  submission, not a bug introduced by this change. Before hitting that wall,
+  `apps:package .` again got further than "just an error": it left a real
+  `tmp/app-<timestamp>.zip` behind, and unzipping it confirmed zcli had
+  locally assembled the exact right structure with the *updated* file
+  contents — `manifest.json` at version `1.1.0`, the new
+  `translations/en.json` short_description, and the full ten-tab
+  `assets/iframe.html` — before making the network call that needs an
+  authenticated account (`tmp/` is gitignored; the zip was deleted after
+  inspection). That's real signal the local file layout and content are
+  correct at the level zcli itself checks; only the remote validate/upload
+  call is blocked on credentials. There is no fully offline `zcli` command
+  that both packages *and* reports validation errors without an account.
 - **The CDN script tag URL was checked against Zendesk's own docs** —
   `https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js`
   pinned to the 2.0 major (not the `.../2/...` floating-minor URL, which
@@ -162,9 +199,13 @@ never a raw `fetch()`.
 3. `npx @zendesk/zcli apps:create .` — uploads and privately installs the
    app.
 4. In a real ticket's sidebar, install with a real Anakin API key from
-   [anakin.io/dashboard](https://anakin.io/dashboard) and exercise all
-   three tabs (Scrape URL, AI Search, Agentic Search) plus both insert
-   buttons against live data — the one thing this session couldn't check.
+   [anakin.io/dashboard](https://anakin.io/dashboard) and exercise all ten
+   tabs (Scrape URL, AI Search, Agentic Search, Map, Crawl, Wire Find, Wire
+   Run, AI Visibility, Monitors, Sessions) plus both insert buttons against
+   live data — the one thing this session couldn't check. Wire Run and
+   Monitors/Sessions will only return non-empty results if the account
+   already has, respectively, an accessible Wire action and existing
+   monitors/sessions to query.
 5. Add `assets/icon.png` (128×128) and register it via `iconLocations` in
    `manifest.json` if pursuing a public Marketplace listing, then submit
    for review through the Zendesk admin UI per "Submit your app."

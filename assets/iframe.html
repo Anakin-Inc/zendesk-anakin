@@ -16,10 +16,11 @@
     background: #fff;
   }
   h1 { font-size: 14px; margin: 0 0 10px; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid #e3e6e8; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid #e3e6e8; }
   .tab-btn {
-    flex: 1;
-    padding: 6px 4px;
+    flex: 0 1 auto;
+    white-space: nowrap;
+    padding: 6px 8px;
     font-size: 11px;
     background: none;
     border: none;
@@ -42,7 +43,7 @@
   textarea { resize: vertical; min-height: 50px; }
   .checkbox-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
   .checkbox-row label { margin: 0; font-weight: normal; }
-  .actions { margin-top: 12px; display: flex; gap: 6px; }
+  .actions { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
   button.primary {
     background: #1f73b7;
     color: #fff;
@@ -83,6 +84,26 @@
   }
   #insert-row { display: flex; gap: 6px; }
   .hint { font-size: 11px; color: #8b959e; margin-top: 4px; }
+  .section-label {
+    font-weight: 600;
+    color: #444;
+    font-size: 12px;
+    margin: 16px 0 4px;
+    padding-top: 10px;
+    border-top: 1px solid #e3e6e8;
+  }
+  .confirm-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 10px 0;
+    padding: 8px;
+    background: #fff8ec;
+    border: 1px solid #f5d99c;
+    border-radius: 3px;
+  }
+  .confirm-row input[type="checkbox"] { margin-top: 2px; }
+  .confirm-row label { margin: 0; font-weight: normal; color: #7a5b16; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -93,6 +114,13 @@
   <button class="tab-btn active" data-tab="scrape">Scrape URL</button>
   <button class="tab-btn" data-tab="search">AI Search</button>
   <button class="tab-btn" data-tab="agentic">Agentic Search</button>
+  <button class="tab-btn" data-tab="map">Map</button>
+  <button class="tab-btn" data-tab="crawl">Crawl</button>
+  <button class="tab-btn" data-tab="wirefind">Wire Find</button>
+  <button class="tab-btn" data-tab="wirerun">Wire Run</button>
+  <button class="tab-btn" data-tab="aivis">AI Visibility</button>
+  <button class="tab-btn" data-tab="monitors">Monitors</button>
+  <button class="tab-btn" data-tab="sessions">Sessions</button>
 </div>
 
 <div id="panel-scrape" class="panel active">
@@ -122,7 +150,7 @@
   </div>
 
   <div class="actions">
-    <button class="primary" id="scrape-submit">Scrape</button>
+    <button class="primary action-btn" id="scrape-submit">Scrape</button>
   </div>
 </div>
 
@@ -134,7 +162,7 @@
   <input type="number" id="search-limit" value="5" min="1" max="20">
 
   <div class="actions">
-    <button class="primary" id="search-submit">Search</button>
+    <button class="primary action-btn" id="search-submit">Search</button>
   </div>
   <p class="hint">Synchronous — costs 3 credits per call.</p>
 </div>
@@ -152,9 +180,205 @@
   <textarea id="agentic-schema" placeholder='{"type": "object", "properties": {"policy_summary": {"type": "string"}}}'></textarea>
 
   <div class="actions">
-    <button class="primary" id="agentic-submit">Run agentic search</button>
+    <button class="primary action-btn" id="agentic-submit">Run agentic search</button>
   </div>
   <p class="hint">Multi-stage AI research — costs 10 credits.</p>
+</div>
+
+<div id="panel-map" class="panel">
+  <label for="map-url">Starting URL</label>
+  <input type="text" id="map-url" placeholder="https://example.com">
+
+  <label for="map-depth">Depth (link-hops to follow)</label>
+  <input type="number" id="map-depth" value="2" min="1" max="5">
+
+  <label for="map-limit">Max URLs returned</label>
+  <input type="number" id="map-limit" value="100" min="1" max="1000">
+
+  <label for="map-limit-per-level">Max URLs per depth level</label>
+  <input type="number" id="map-limit-per-level" value="100" min="1" max="1000">
+
+  <label for="map-search">Keyword filter (optional)</label>
+  <input type="text" id="map-search" placeholder="e.g. billing">
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="map-include-subdomains">
+    <label for="map-include-subdomains">Include subdomains</label>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" id="map-include-external">
+    <label for="map-include-external">Include external links</label>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" id="map-use-browser">
+    <label for="map-use-browser">Use browser rendering (SPAs)</label>
+  </div>
+
+  <div class="actions">
+    <button class="primary action-btn" id="map-submit">Map site</button>
+  </div>
+  <p class="hint">Discovers reachable URLs under a site — useful for finding
+    the right sub-page (e.g. a docs or refund-policy section) before scraping
+    it directly.</p>
+</div>
+
+<div id="panel-crawl" class="panel">
+  <label for="crawl-url">Starting URL</label>
+  <input type="text" id="crawl-url" placeholder="https://example.com/docs">
+
+  <label for="crawl-max-pages">Max pages</label>
+  <input type="number" id="crawl-max-pages" value="10" min="1" max="500">
+
+  <label for="crawl-depth">Depth (link-hops to follow)</label>
+  <input type="number" id="crawl-depth" value="1" min="1" max="5">
+
+  <label for="crawl-country">Country</label>
+  <select id="crawl-country">
+    <option value="us" selected>US</option>
+    <option value="gb">GB</option>
+    <option value="de">DE</option>
+    <option value="in">IN</option>
+    <option value="jp">JP</option>
+  </select>
+
+  <label for="crawl-include-patterns">Include patterns (comma-separated, optional)</label>
+  <input type="text" id="crawl-include-patterns" placeholder="/docs/*, /help/*">
+
+  <label for="crawl-exclude-patterns">Exclude patterns (comma-separated, optional)</label>
+  <input type="text" id="crawl-exclude-patterns" placeholder="/blog/*">
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="crawl-use-browser">
+    <label for="crawl-use-browser">Use browser rendering (SPAs)</label>
+  </div>
+
+  <div class="actions">
+    <button class="primary action-btn" id="crawl-submit">Crawl</button>
+  </div>
+  <p class="hint">Bulk-fetches markdown across several pages at once — e.g.
+    pulling a whole docs/help section into one ticket note instead of
+    scraping each page individually.</p>
+</div>
+
+<div id="panel-wirefind" class="panel">
+  <label for="wire-find-q">Intent (natural language)</label>
+  <textarea id="wire-find-q" placeholder="e.g. find a product's price and reviews on walmart"></textarea>
+
+  <label for="wire-find-limit">Max candidate actions</label>
+  <input type="number" id="wire-find-limit" value="5" min="1">
+
+  <div class="actions">
+    <button class="primary action-btn" id="wire-discover-submit">Find actions</button>
+  </div>
+  <p class="hint">Returns candidate Wire actions (action_id, whether they're
+    read or write, required params, credit cost). Copy a read action's
+    action_id into the Wire Run tab to execute it.</p>
+
+  <div class="section-label">Or browse a site's catalog directly</div>
+  <label for="wire-find-slug">Catalog slug (optional)</label>
+  <input type="text" id="wire-find-slug" placeholder="e.g. walmart — leave blank to list every catalog">
+
+  <div class="actions">
+    <button class="secondary action-btn" id="wire-catalog-submit">Browse catalog</button>
+  </div>
+</div>
+
+<div id="panel-wirerun" class="panel">
+  <label for="wire-run-action-id">Action ID</label>
+  <input type="text" id="wire-run-action-id" placeholder="e.g. walmart.get_product (from Wire Find)">
+
+  <label for="wire-run-params">Action parameters (JSON, optional)</label>
+  <textarea id="wire-run-params" placeholder='{"product_url": "https://www.walmart.com/ip/..."}'></textarea>
+  <p class="hint">Shape depends on the action — check its schema in Wire Find
+    / Browse catalog first.</p>
+
+  <label for="wire-run-credential-id">Credential ID (optional)</label>
+  <input type="text" id="wire-run-credential-id" placeholder="only if the action's auth_mode requires it">
+  <p class="hint">This app only runs Wire's read (data-extraction) actions —
+    it does not manage Wire sign-ins. If an action needs auth, get a
+    credential_id from the Anakin dashboard first.</p>
+
+  <div class="actions">
+    <button class="primary action-btn" id="wire-run-submit">Run action</button>
+  </div>
+</div>
+
+<div id="panel-aivis" class="panel">
+  <label for="aivis-query">Question to ask every AI engine</label>
+  <textarea id="aivis-query" placeholder="e.g. what do people say about Acme Corp's refund policy" maxlength="2000"></textarea>
+
+  <label for="aivis-country">Country (search geography)</label>
+  <select id="aivis-country">
+    <option value="us" selected>US</option>
+    <option value="gb">GB</option>
+    <option value="de">DE</option>
+    <option value="in">IN</option>
+    <option value="jp">JP</option>
+  </select>
+
+  <label for="aivis-sources">Engines (comma-separated slugs, optional)</label>
+  <input type="text" id="aivis-sources" placeholder="leave blank to query all enabled engines">
+  <div class="actions">
+    <button class="secondary action-btn" id="aivis-load-sources">Load available engines</button>
+  </div>
+
+  <div class="actions">
+    <button class="primary action-btn" id="aivis-submit">Search</button>
+  </div>
+  <p class="hint">Asks ChatGPT/Gemini/Google AI Overview etc. the same
+    question and compares answers — useful for "what are AI engines saying
+    about this issue/product" tickets. Billed per engine queried; failed
+    engines are free.</p>
+</div>
+
+<div id="panel-monitors" class="panel">
+  <div class="actions">
+    <button class="primary action-btn" id="monitors-list-submit">List monitors</button>
+  </div>
+  <p class="hint">Shows every website monitor on this account (status, next
+    check time, alert settings).</p>
+
+  <div class="section-label">Get a monitor's recent changes</div>
+  <label for="monitors-id">Monitor ID</label>
+  <input type="text" id="monitors-id" placeholder="from the list above">
+  <div class="actions">
+    <button class="secondary action-btn" id="monitors-changes-submit">Get changes</button>
+  </div>
+
+  <div class="section-label">Control an existing monitor</div>
+  <label for="monitors-control-id">Monitor ID</label>
+  <input type="text" id="monitors-control-id" placeholder="from the list above">
+  <label for="monitors-control-action">Action</label>
+  <select id="monitors-control-action">
+    <option value="pause">Pause — stop scheduled checks</option>
+    <option value="resume">Resume — restart scheduled checks</option>
+    <option value="run_now">Run now — trigger an immediate check (billed like a normal check)</option>
+  </select>
+  <div class="confirm-row">
+    <input type="checkbox" id="monitors-control-confirm">
+    <label for="monitors-control-confirm">I understand this changes the monitor's schedule immediately and cannot be undone by closing this panel.</label>
+  </div>
+  <div class="actions">
+    <button class="secondary action-btn" id="monitors-control-submit" disabled>Apply</button>
+  </div>
+  <p class="hint">Only pause/resume/run-now are exposed here. Creating a new
+    monitor and permanently deleting one stay out of scope for a
+    ticket-sidebar tool — see README's "Scope" section. The Apply button
+    stays disabled until the checkbox above is checked, and the checkbox
+    resets after every use so each action needs its own explicit
+    confirmation.</p>
+</div>
+
+<div id="panel-sessions" class="panel">
+  <label for="sessions-domain">Domain filter (optional)</label>
+  <input type="text" id="sessions-domain" placeholder="e.g. amazon.com">
+
+  <div class="actions">
+    <button class="primary action-btn" id="sessions-list-submit">List sessions</button>
+  </div>
+  <p class="hint">Lists saved (login-protected) browser sessions usable by
+    Scrape/Crawl/Monitors/Wire — read-only. New sessions are created
+    interactively in the Anakin dashboard (login + 2FA), not from here.</p>
 </div>
 
 <div id="status"></div>
@@ -210,6 +434,12 @@
     document.getElementById("result-text").textContent = "";
     document.getElementById("insert-note").disabled = true;
     document.getElementById("insert-reply").disabled = true;
+    // Switching tabs/actions always demands a fresh confirmation before a
+    // monitor control action can run again.
+    var monitorControlConfirmEl = document.getElementById("monitors-control-confirm");
+    var monitorControlSubmitEl = document.getElementById("monitors-control-submit");
+    if (monitorControlConfirmEl) monitorControlConfirmEl.checked = false;
+    if (monitorControlSubmitEl) monitorControlSubmitEl.disabled = true;
     setStatus("");
   }
 
@@ -221,10 +451,21 @@
     document.getElementById("insert-reply").disabled = false;
   }
 
+  // Every button that triggers an API call carries class="action-btn" (see
+  // markup above) so this stays a one-line loop as tabs are added, instead of
+  // an ever-growing list of getElementById calls kept in sync by hand.
   function setButtonsDisabled(disabled) {
-    document.getElementById("scrape-submit").disabled = disabled;
-    document.getElementById("search-submit").disabled = disabled;
-    document.getElementById("agentic-submit").disabled = disabled;
+    var buttons = document.querySelectorAll(".action-btn");
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].disabled = disabled;
+    }
+  }
+
+  function splitCsv(text) {
+    return text
+      .split(",")
+      .map(function (s) { return s.trim(); })
+      .filter(function (s) { return s.length > 0; });
   }
 
   // ─── Anakin API calls ────────────────────────────────────────────────────
@@ -263,8 +504,18 @@
     return client.request(options);
   }
 
-  function pollJob(path) {
+  // errorExtractor lets callers with a differently-shaped error field (Wire's
+  // nested { code, message } object vs. the flat string every other endpoint
+  // uses) still get a readable message instead of "[object Object]".
+  function pollJob(path, errorExtractor) {
     var deadline = Date.now() + POLL_TIMEOUT_MS;
+
+    function extractError(body) {
+      if (errorExtractor) {
+        return errorExtractor(body);
+      }
+      return body.error || "Anakin job failed";
+    }
 
     function poll() {
       return anakinRequest(path, "GET").then(function (response) {
@@ -273,13 +524,52 @@
           return body;
         }
         if (body.status === "failed") {
-          var err = new Error(body.error || "Anakin job failed");
+          var err = new Error(extractError(body));
           err.anakinBody = body;
           throw err;
         }
         if (Date.now() > deadline) {
           throw new Error(
             "Timed out waiting for the job to finish (over " +
+              Math.round(POLL_TIMEOUT_MS / 1000) +
+              "s). Anakin may still be processing it — try again shortly."
+          );
+        }
+        return new Promise(function (resolve) {
+          setTimeout(resolve, POLL_INTERVAL_MS);
+        }).then(poll);
+      });
+    }
+
+    return poll();
+  }
+
+  function wireErrorExtractor(body) {
+    if (body.error && typeof body.error === "object") {
+      return body.error.message || body.error.code || "Wire job failed";
+    }
+    return body.error || "Wire job failed";
+  }
+
+  // AI Visibility's own client deliberately does NOT throw on a "failed"
+  // status — a failed run still carries whichever engines did answer plus
+  // per-engine errors, and both are useful to a support agent. So this loops
+  // only on "running" and returns the body either way, mirroring
+  // anakin-mcp/src/client.ts's aiVisibilitySearch() exactly instead of
+  // reusing pollJob()'s completed/failed/throw shape.
+  function pollAiVisibility(searchId) {
+    var deadline = Date.now() + POLL_TIMEOUT_MS;
+    var path = "/ai-visibility/search/" + encodeURIComponent(searchId);
+
+    function poll() {
+      return anakinRequest(path, "GET").then(function (response) {
+        var body = parseResponse(response);
+        if (body.status !== "running") {
+          return body;
+        }
+        if (Date.now() > deadline) {
+          throw new Error(
+            "Timed out waiting for the AI visibility search to finish (over " +
               Math.round(POLL_TIMEOUT_MS / 1000) +
               "s). Anakin may still be processing it — try again shortly."
           );
@@ -329,6 +619,94 @@
       return err.message;
     }
     return "Request failed. Check the API key and try again.";
+  }
+
+  // ─── Result formatting ───────────────────────────────────────────────────
+  //
+  // Scrape/Search/Agentic Search (below) format their own results inline
+  // because anakin-mcp/src/client.ts gives their response a fully-typed
+  // shape. Map, Crawl, and AI Visibility's top-level fields are typed too
+  // (MapResult, CrawlResult, AIVisibilitySearch) so those get the same
+  // treatment here. Wire discover/catalog/run and Monitors/Sessions are
+  // typed `unknown` / `Record<string, unknown>` in client.ts — their exact
+  // field names aren't part of the contract, so rather than guess at names
+  // that might not exist, those are shown as pretty-printed JSON verbatim.
+
+  function formatMapResult(doc) {
+    var lines = [
+      (doc.totalLinks || 0) + " internal link(s), " +
+        (doc.totalExternalLinks || 0) + " external link(s) found under " +
+        doc.url + "."
+    ];
+    if (doc.links && doc.links.length) {
+      var shown = doc.links.slice(0, 50);
+      lines.push("");
+      lines.push("Internal links:");
+      lines.push(shown.join("\n"));
+      if (doc.links.length > shown.length) {
+        lines.push("...and " + (doc.links.length - shown.length) + " more.");
+      }
+    }
+    if (doc.externalLinks && doc.externalLinks.length) {
+      var shownExt = doc.externalLinks.slice(0, 20);
+      lines.push("");
+      lines.push("External links:");
+      lines.push(shownExt.join("\n"));
+      if (doc.externalLinks.length > shownExt.length) {
+        lines.push("...and " + (doc.externalLinks.length - shownExt.length) + " more.");
+      }
+    }
+    return lines.join("\n");
+  }
+
+  function formatCrawlResult(doc) {
+    var lines = [
+      (doc.completedPages || 0) + "/" + (doc.totalPages || 0) +
+        " page(s) fetched from " + doc.url + "."
+    ];
+    (doc.pages || []).forEach(function (page, idx) {
+      lines.push("");
+      lines.push((idx + 1) + ". " + page.url + " [" + page.status + "]");
+      if (page.status === "failed") {
+        lines.push(page.error || "(no error detail)");
+      } else {
+        var md = page.markdown || page.html || "(no content)";
+        lines.push(md.length > 600 ? md.slice(0, 600) + "..." : md);
+      }
+    });
+    return lines.join("\n");
+  }
+
+  function formatWireDiscoverResult(result) {
+    var text = JSON.stringify(result.results || result, null, 2);
+    if (result.next) {
+      text = "Suggested next call: " + result.next + "\n\n" + text;
+    }
+    return text;
+  }
+
+  function formatWireJobResult(job) {
+    var meta = [];
+    if (typeof job.credits_used === "number") {
+      meta.push(job.credits_used + " credit(s) used");
+    }
+    if (typeof job.execution_ms === "number") {
+      meta.push(job.execution_ms + "ms");
+    }
+    var header = meta.length ? meta.join(", ") + "\n\n" : "";
+    return header + JSON.stringify(job.data !== undefined ? job.data : job, null, 2);
+  }
+
+  function formatAiVisibilityResult(search) {
+    var lines = ["Status: " + search.status + (search.country ? " (" + search.country + ")" : "")];
+    if (search.synthesis) {
+      lines.push("");
+      lines.push(search.synthesis);
+    }
+    lines.push("");
+    lines.push("--- Per-engine results ---");
+    lines.push(JSON.stringify(search.results || [], null, 2));
+    return lines.join("\n");
   }
 
   // ─── Scrape URL ──────────────────────────────────────────────────────────
@@ -457,6 +835,406 @@
         }
         setStatus("Done" + (result.cached ? " (cached)" : "") + ".");
         showResult(text);
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // ─── Map ─────────────────────────────────────────────────────────────────
+
+  document.getElementById("map-submit").addEventListener("click", function () {
+    var url = document.getElementById("map-url").value.trim();
+    if (!url) {
+      setStatus("Enter a URL to map.", true);
+      return;
+    }
+
+    var body = {
+      url: url,
+      limit: parseInt(document.getElementById("map-limit").value, 10) || 100,
+      depth: parseInt(document.getElementById("map-depth").value, 10) || 2,
+      limitPerLevel: parseInt(document.getElementById("map-limit-per-level").value, 10) || 100,
+      includeSubdomains: document.getElementById("map-include-subdomains").checked,
+      includeExternalLinks: document.getElementById("map-include-external").checked,
+      useBrowser: document.getElementById("map-use-browser").checked
+    };
+    var search = document.getElementById("map-search").value.trim();
+    if (search) {
+      body.search = search;
+    }
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Submitting map job...");
+
+    anakinRequest("/map", "POST", body)
+      .then(function (response) {
+        var submitted = parseResponse(response);
+        var jobId = requireJobId(submitted);
+        setStatus("Mapping " + url + " ...");
+        return pollJob("/map/" + jobId);
+      })
+      .then(function (doc) {
+        setStatus("Done.");
+        showResult(formatMapResult(doc));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // ─── Crawl ───────────────────────────────────────────────────────────────
+
+  document.getElementById("crawl-submit").addEventListener("click", function () {
+    var url = document.getElementById("crawl-url").value.trim();
+    if (!url) {
+      setStatus("Enter a URL to crawl.", true);
+      return;
+    }
+
+    var body = {
+      url: url,
+      maxPages: parseInt(document.getElementById("crawl-max-pages").value, 10) || 10,
+      depth: parseInt(document.getElementById("crawl-depth").value, 10) || 1,
+      country: document.getElementById("crawl-country").value || "us",
+      useBrowser: document.getElementById("crawl-use-browser").checked
+    };
+    var includePatterns = splitCsv(document.getElementById("crawl-include-patterns").value);
+    if (includePatterns.length) {
+      body.includePatterns = includePatterns;
+    }
+    var excludePatterns = splitCsv(document.getElementById("crawl-exclude-patterns").value);
+    if (excludePatterns.length) {
+      body.excludePatterns = excludePatterns;
+    }
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Submitting crawl job...");
+
+    anakinRequest("/crawl", "POST", body)
+      .then(function (response) {
+        var submitted = parseResponse(response);
+        var jobId = requireJobId(submitted);
+        setStatus("Crawling " + url + " ...");
+        return pollJob("/crawl/" + jobId);
+      })
+      .then(function (doc) {
+        var partial = (doc.completedPages || 0) < (doc.totalPages || 0);
+        setStatus("Done" + (partial ? " (partial — some pages failed)" : "") + ".");
+        showResult(formatCrawlResult(doc));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // ─── Wire: discover / catalog ───────────────────────────────────────────
+
+  document.getElementById("wire-discover-submit").addEventListener("click", function () {
+    var q = document.getElementById("wire-find-q").value.trim();
+    if (!q) {
+      setStatus("Enter an intent to search for.", true);
+      return;
+    }
+    var limit = parseInt(document.getElementById("wire-find-limit").value, 10) || 5;
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Finding Wire actions...");
+
+    anakinRequest("/wire/resolve?q=" + encodeURIComponent(q) + "&limit=" + encodeURIComponent(limit), "GET")
+      .then(function (response) {
+        var result = parseResponse(response);
+        setStatus("Done.");
+        showResult(formatWireDiscoverResult(result));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  document.getElementById("wire-catalog-submit").addEventListener("click", function () {
+    var slug = document.getElementById("wire-find-slug").value.trim();
+    var path = slug ? "/wire/catalog/" + encodeURIComponent(slug) : "/wire/catalog";
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus(slug ? "Loading " + slug + " catalog..." : "Loading catalog list...");
+
+    anakinRequest(path, "GET")
+      .then(function (response) {
+        var result = parseResponse(response);
+        setStatus("Done.");
+        showResult(JSON.stringify(result, null, 2));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // ─── Wire: run a read action ─────────────────────────────────────────────
+  //
+  // Only wraps POST /wire/task for READ actions. Write actions (type
+  // "write" — submitting forms, purchases, sign-ins) are not exposed by this
+  // app at all — see README.md's scope section for why.
+
+  document.getElementById("wire-run-submit").addEventListener("click", function () {
+    var actionId = document.getElementById("wire-run-action-id").value.trim();
+    if (!actionId) {
+      setStatus("Enter an action_id (from the Wire Find tab).", true);
+      return;
+    }
+
+    var params = {};
+    var paramsText = document.getElementById("wire-run-params").value.trim();
+    if (paramsText) {
+      try {
+        params = JSON.parse(paramsText);
+      } catch (e) {
+        setStatus("Action parameters is not valid JSON: " + e.message, true);
+        return;
+      }
+    }
+
+    var body = { action_id: actionId };
+    if (Object.keys(params).length > 0) {
+      body.params = params;
+    }
+    var credentialId = document.getElementById("wire-run-credential-id").value.trim();
+    if (credentialId) {
+      body.credential_id = credentialId;
+    }
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Running Wire action...");
+
+    anakinRequest("/wire/task", "POST", body)
+      .then(function (response) {
+        var accepted = parseResponse(response);
+        var jobId = accepted.job_id || accepted.jobId;
+        if (!jobId) {
+          // Sync action: the terminal result already came back inline, same
+          // as anakin-mcp/src/client.ts's wireRun() short-circuit.
+          return accepted;
+        }
+        setStatus("Running " + actionId + "...");
+        return pollJob("/wire/jobs/" + jobId, wireErrorExtractor);
+      })
+      .then(function (job) {
+        setStatus("Done.");
+        showResult(formatWireJobResult(job));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // ─── AI Visibility ────────────────────────────────────────────────────────
+
+  document.getElementById("aivis-load-sources").addEventListener("click", function () {
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Loading available engines...");
+
+    anakinRequest("/ai-visibility/sources", "GET")
+      .then(function (response) {
+        var result = parseResponse(response);
+        setStatus("Done.");
+        showResult(JSON.stringify(result, null, 2));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  document.getElementById("aivis-submit").addEventListener("click", function () {
+    var query = document.getElementById("aivis-query").value.trim();
+    if (!query) {
+      setStatus("Enter a question to ask.", true);
+      return;
+    }
+
+    var body = { query: query };
+    var country = document.getElementById("aivis-country").value;
+    if (country) {
+      body.country = country;
+    }
+    var sources = splitCsv(document.getElementById("aivis-sources").value);
+    if (sources.length) {
+      body.sources = sources;
+    }
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Submitting AI visibility search...");
+
+    anakinRequest("/ai-visibility/search", "POST", body)
+      .then(function (response) {
+        var submitted = parseResponse(response);
+        if (!submitted.search_id) {
+          throw new Error("Anakin API response did not include a search id.");
+        }
+        setStatus("Querying AI engines...");
+        return pollAiVisibility(submitted.search_id);
+      })
+      .then(function (search) {
+        setStatus("Done (" + search.status + ").");
+        showResult(formatAiVisibilityResult(search));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // ─── Monitors ────────────────────────────────────────────────────────────
+
+  document.getElementById("monitors-list-submit").addEventListener("click", function () {
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Loading monitors...");
+
+    anakinRequest("/monitors", "GET")
+      .then(function (response) {
+        var result = parseResponse(response);
+        setStatus("Done.");
+        showResult(JSON.stringify(result, null, 2));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  document.getElementById("monitors-changes-submit").addEventListener("click", function () {
+    var id = document.getElementById("monitors-id").value.trim();
+    if (!id) {
+      setStatus("Enter a monitor ID (from List monitors).", true);
+      return;
+    }
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Loading changes...");
+
+    anakinRequest("/monitors/" + encodeURIComponent(id) + "/changes", "GET")
+      .then(function (response) {
+        var result = parseResponse(response);
+        setStatus("Done.");
+        showResult(JSON.stringify(result, null, 2));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+      });
+  });
+
+  // monitor_control (pause/resume/run_now only — delete is intentionally not
+  // exposed in this UI, see README's "Scope" section). Gated by a checkbox
+  // that must be re-checked before every single use: the Apply button is
+  // disabled by default and re-disabled after each click, so a stray extra
+  // click after a completed action can't silently re-fire it.
+  var monitorControlConfirm = document.getElementById("monitors-control-confirm");
+  var monitorControlSubmit = document.getElementById("monitors-control-submit");
+
+  function refreshMonitorControlButton() {
+    monitorControlSubmit.disabled = !monitorControlConfirm.checked;
+  }
+  monitorControlConfirm.addEventListener("change", refreshMonitorControlButton);
+
+  var MONITOR_CONTROL_PATHS = {
+    pause: "pause",
+    resume: "resume",
+    run_now: "run"
+  };
+  var MONITOR_CONTROL_LABELS = {
+    pause: "Pausing monitor...",
+    resume: "Resuming monitor...",
+    run_now: "Triggering an immediate check..."
+  };
+
+  monitorControlSubmit.addEventListener("click", function () {
+    var id = document.getElementById("monitors-control-id").value.trim();
+    var action = document.getElementById("monitors-control-action").value;
+
+    if (!id) {
+      setStatus("Enter a monitor ID (from List monitors).", true);
+      return;
+    }
+    if (!monitorControlConfirm.checked) {
+      // Belt and suspenders: the button is disabled in this state already,
+      // but don't trust client-side disabled state alone.
+      setStatus("Check the confirmation box before applying a monitor control action.", true);
+      return;
+    }
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus(MONITOR_CONTROL_LABELS[action] || "Applying...");
+
+    anakinRequest("/monitors/" + encodeURIComponent(id) + "/" + MONITOR_CONTROL_PATHS[action], "POST")
+      .then(function (response) {
+        var result = parseResponse(response);
+        setStatus("Done.");
+        showResult(JSON.stringify(result, null, 2));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+        // Require a fresh confirmation for the next action, whatever the
+        // outcome of this one.
+        monitorControlConfirm.checked = false;
+        refreshMonitorControlButton();
+      });
+  });
+
+  // ─── Sessions ────────────────────────────────────────────────────────────
+
+  document.getElementById("sessions-list-submit").addEventListener("click", function () {
+    var domain = document.getElementById("sessions-domain").value.trim();
+    var path = domain ? "/sessions?domain=" + encodeURIComponent(domain) : "/sessions";
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus("Loading sessions...");
+
+    anakinRequest(path, "GET")
+      .then(function (response) {
+        var result = parseResponse(response);
+        setStatus("Done.");
+        showResult(JSON.stringify(result, null, 2));
       })
       .catch(function (err) {
         setStatus(describeError(err), true);

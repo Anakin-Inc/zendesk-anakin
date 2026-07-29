@@ -92,6 +92,18 @@
     padding-top: 10px;
     border-top: 1px solid #e3e6e8;
   }
+  .confirm-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 10px 0;
+    padding: 8px;
+    background: #fff8ec;
+    border: 1px solid #f5d99c;
+    border-radius: 3px;
+  }
+  .confirm-row input[type="checkbox"] { margin-top: 2px; }
+  .confirm-row label { margin: 0; font-weight: normal; color: #7a5b16; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -332,6 +344,29 @@
   <div class="actions">
     <button class="secondary action-btn" id="monitors-changes-submit">Get changes</button>
   </div>
+
+  <div class="section-label">Control an existing monitor</div>
+  <label for="monitors-control-id">Monitor ID</label>
+  <input type="text" id="monitors-control-id" placeholder="from the list above">
+  <label for="monitors-control-action">Action</label>
+  <select id="monitors-control-action">
+    <option value="pause">Pause — stop scheduled checks</option>
+    <option value="resume">Resume — restart scheduled checks</option>
+    <option value="run_now">Run now — trigger an immediate check (billed like a normal check)</option>
+  </select>
+  <div class="confirm-row">
+    <input type="checkbox" id="monitors-control-confirm">
+    <label for="monitors-control-confirm">I understand this changes the monitor's schedule immediately and cannot be undone by closing this panel.</label>
+  </div>
+  <div class="actions">
+    <button class="secondary action-btn" id="monitors-control-submit" disabled>Apply</button>
+  </div>
+  <p class="hint">Only pause/resume/run-now are exposed here. Creating a new
+    monitor and permanently deleting one stay out of scope for a
+    ticket-sidebar tool — see README's "Scope" section. The Apply button
+    stays disabled until the checkbox above is checked, and the checkbox
+    resets after every use so each action needs its own explicit
+    confirmation.</p>
 </div>
 
 <div id="panel-sessions" class="panel">
@@ -399,6 +434,12 @@
     document.getElementById("result-text").textContent = "";
     document.getElementById("insert-note").disabled = true;
     document.getElementById("insert-reply").disabled = true;
+    // Switching tabs/actions always demands a fresh confirmation before a
+    // monitor control action can run again.
+    var monitorControlConfirmEl = document.getElementById("monitors-control-confirm");
+    var monitorControlSubmitEl = document.getElementById("monitors-control-submit");
+    if (monitorControlConfirmEl) monitorControlConfirmEl.checked = false;
+    if (monitorControlSubmitEl) monitorControlSubmitEl.disabled = true;
     setStatus("");
   }
 
@@ -1115,6 +1156,67 @@
       })
       .then(function () {
         setButtonsDisabled(false);
+      });
+  });
+
+  // monitor_control (pause/resume/run_now only — delete is intentionally not
+  // exposed in this UI, see README's "Scope" section). Gated by a checkbox
+  // that must be re-checked before every single use: the Apply button is
+  // disabled by default and re-disabled after each click, so a stray extra
+  // click after a completed action can't silently re-fire it.
+  var monitorControlConfirm = document.getElementById("monitors-control-confirm");
+  var monitorControlSubmit = document.getElementById("monitors-control-submit");
+
+  function refreshMonitorControlButton() {
+    monitorControlSubmit.disabled = !monitorControlConfirm.checked;
+  }
+  monitorControlConfirm.addEventListener("change", refreshMonitorControlButton);
+
+  var MONITOR_CONTROL_PATHS = {
+    pause: "pause",
+    resume: "resume",
+    run_now: "run"
+  };
+  var MONITOR_CONTROL_LABELS = {
+    pause: "Pausing monitor...",
+    resume: "Resuming monitor...",
+    run_now: "Triggering an immediate check..."
+  };
+
+  monitorControlSubmit.addEventListener("click", function () {
+    var id = document.getElementById("monitors-control-id").value.trim();
+    var action = document.getElementById("monitors-control-action").value;
+
+    if (!id) {
+      setStatus("Enter a monitor ID (from List monitors).", true);
+      return;
+    }
+    if (!monitorControlConfirm.checked) {
+      // Belt and suspenders: the button is disabled in this state already,
+      // but don't trust client-side disabled state alone.
+      setStatus("Check the confirmation box before applying a monitor control action.", true);
+      return;
+    }
+
+    clearResult();
+    setButtonsDisabled(true);
+    setStatus(MONITOR_CONTROL_LABELS[action] || "Applying...");
+
+    anakinRequest("/monitors/" + encodeURIComponent(id) + "/" + MONITOR_CONTROL_PATHS[action], "POST")
+      .then(function (response) {
+        var result = parseResponse(response);
+        setStatus("Done.");
+        showResult(JSON.stringify(result, null, 2));
+      })
+      .catch(function (err) {
+        setStatus(describeError(err), true);
+      })
+      .then(function () {
+        setButtonsDisabled(false);
+        // Require a fresh confirmation for the next action, whatever the
+        // outcome of this one.
+        monitorControlConfirm.checked = false;
+        refreshMonitorControlButton();
       });
   });
 
